@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Million Pixel Grid – Autentificare</title>
+<style>
+  :root{
+    --bg:#d6d6d6;
+    --card-bg:#ffffff;
+    --text:#111;
+    --muted:#555;
+    --btn:#1d4ed8;
+    --btn-hover:#2563eb;
+    --sidebar-bg:linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,.08));
+    --border:#333;
+    --card-border:rgba(0,0,0,.15);
+    --shadow:0 10px 25px rgba(0,0,0,.15);
+  }
+  [data-theme="dark"]{
+    --bg:#2b2b2b;
+    --card-bg:#313131;
+    --text:#f5f5f5;
+    --muted:#cfcfcf;
+    --btn:#3b82f6;
+    --btn-hover:#4f8df7;
+    --sidebar-bg:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.08));
+    --border:#777;
+    --card-border:rgba(255,255,255,.16);
+    --shadow:0 10px 25px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font:14px/1.4 system-ui,Segoe UI,Roboto,Ubuntu,sans-serif;
+    transition:background .3s,color .3s;
+    display:flex;justify-content:center;align-items:center;height:100vh;
+    background:var(--bg); color:var(--text);
+  }
+  .hidden{display:none;}
+
+  .form-container{
+    background:var(--card-bg);
+    padding:24px;border-radius:16px;
+    box-shadow:var(--shadow);width:300px;border:1px solid var(--card-border);
+  }
+  input[type=text], input[type=password]{
+    width:100%;padding:10px 12px;margin:6px 0;border-radius:10px;border:1px solid #cfcfcf;background:#fff;color:#111;
+  }
+
+  .btn{
+    width:100%;padding:10px 14px;border:none;border-radius:12px;
+    cursor:pointer;font-weight:600;transition:transform .04s ease, background .2s, box-shadow .2s;
+    box-shadow:0 2px 0 rgba(0,0,0,.15);
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--btn);color:#fff;}
+  .btn-primary:hover{background:var(--btn-hover);}
+  .btn-ghost{background:transparent;color:var(--text);border:1px dashed var(--card-border);}
+  .btn-ghost:hover{background:rgba(0,0,0,.05);}
+  [data-theme="dark"] .btn-ghost:hover{background:rgba(255,255,255,.06);}
+
+  .link{font-size:12px;color:var(--btn);cursor:pointer;text-decoration:underline;margin-top:6px;display:block;text-align:center;}
+  .error{color:#ff5252;font-size:12px;margin-top:6px;}
+  .checkbox-container{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px;color:var(--muted);}
+
+  .app{
+    display:none;
+    grid-template-columns:1fr 320px;gap:12px;height:100vh;padding:12px;
+    width:100vw; background:var(--bg); color:var(--text);
+  }
+  .stage{
+    position:relative;border:1px solid var(--border);
+    border-radius:16px;background:transparent;overflow:hidden
+  }
+  canvas{display:block;width:100%;height:100%}
+
+  /* === Sidebar modern === */
+  .sidebar{
+    display:flex;flex-direction:column;gap:14px;
+    background:var(--sidebar-bg);
+    border:1px solid var(--card-border);
+    border-radius:16px;padding:14px 14px 16px;
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(6px);
+  }
+  .sidebar h3{margin:0 0 2px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .section{
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:10px;
+    display:flex;flex-direction:column;gap:10px;
+    overflow:hidden;
+  }
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  label{font-size:12px;color:var(--muted)}
+
+  /* Paletă de culori – responsive, încap în cutie */
+  .palette{
+    padding:6px;
+    display:grid;
+    grid-template-columns:repeat(8, minmax(0,1fr));
+    gap:8px;
+  }
+  .swatch{
+    width:100%;
+    aspect-ratio:1/1;
+    border-radius:8px;
+    border:1px solid rgba(0,0,0,.2);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.12);
+    cursor:pointer; transition:transform .05s, box-shadow .2s, outline .2s;
+    overflow:hidden;
+  }
+  .swatch:active{transform:scale(.96)}
+  .swatch.selected{outline:3px solid var(--btn);outline-offset:0}
+
+  .color-input{
+    display:flex;align-items:center;gap:10px;
+    padding:10px;border:1px dashed var(--card-border);border-radius:12px;
+    background:transparent;
+  }
+  .color-input input{width:100%;height:38px;border-radius:10px;border:1px solid #cfcfcf;padding:0}
+  .tiny{font-size:11px;color:var(--muted);}
+  #status{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;border:1px solid var(--card-border);
+    background:rgba(0,0,0,.06);color:var(--text);font-size:12px;align-self:flex-start;
+  }
+  [data-theme="dark"] #status{background:rgba(255,255,255,.06);}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .full{grid-column:1/-1}
+  .sep{height:1px;background:var(--card-border);margin:2px 0}
+
+  /* === Theme switch === */
+  .theme-switch{
+    position:fixed;top:12px;left:12px;z-index:1000;
+    width:56px;height:30px;border-radius:999px;
+    background:rgba(0,0,0,.2);border:1px solid rgba(0,0,0,.25);
+    display:flex;align-items:center;padding:2px;cursor:pointer;user-select:none;
+    transition:background .2s,border-color .2s;
+  }
+  [data-theme="dark"] .theme-switch{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.25);}
+  .theme-switch .knob{
+    width:26px;height:26px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:14px;line-height:1;transform:translateX(0);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+  [data-theme="dark"] .theme-switch .knob{transform:translateX(26px);}
+</style>
+</head>
+<body>
+
+<!-- comutator temă -->
+<button id="themeToggle" class="theme-switch" aria-label="Comută tema">
+  <span class="knob" id="themeKnob">☀️</span>
+</button>
+
+<!-- Login -->
+<div id="loginForm" class="form-container">
+  <h3>Autentificare</h3>
+  <input type="text" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPassword" placeholder="Parola">
+  <button class="btn btn-primary" id="loginBtn">Loghează-te</button>
+  <span class="link" id="showSignup">Nu ai cont? Creează unul!</span>
+  <div class="error" id="loginError"></div>
+</div>
+
+<!-- Signup -->
+<div id="signupForm" class="form-container hidden">
+  <h3>Crează cont</h3>
+  <input type="text" id="signupEmail" placeholder="Email">
+  <input type="password" id="signupPassword" placeholder="Parola">
+  <input type="password" id="signupConfirm" placeholder="Confirmă parola">
+  <div class="checkbox-container">
+    <input type="checkbox" id="over18"> Am peste 18 ani
+  </div>
+  <button class="btn btn-primary" id="signupBtn">Înregistrează-te</button>
+  <span class="link" id="showLogin">Am deja cont</span>
+  <div class="error" id="signupError"></div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+  <div class="stage" id="stage">
+    <canvas id="c"></canvas>
+  </div>
+
+  <aside class="sidebar">
+    <h3>🎨 Editor selecție</h3>
+
+    <div class="section">
+      <label>Paletă rapidă</label>
+      <div class="palette" id="palette"></div>
+
+      <div class="color-input">
+        <input id="color" type="color" value="#1d4ed8" />
+        <div>
+          <div class="tiny">Poți alege manual o culoare.</div>
+          <div class="tiny">Click pe un swatch pentru selectare.</div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="actions">
+        <button class="btn btn-primary full" id="finalize">✅ Finalizează selecția</button>
+        <button class="btn btn-ghost" id="clearSel">🧹 Șterge selecția</button>
+        <button class="btn btn-ghost" id="addFav">➕ Adaugă la paletă</button>
+        <button class="btn btn-ghost full" id="logoutBtn">🚪 Ieșire</button>
+      </div>
+
+      <div id="status">Nicio selecție</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ===== THEME =====
+(function initTheme(){
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initial = saved || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', initial);
+  const knob = document.getElementById('themeKnob');
+  if(knob){ knob.textContent = initial === 'dark' ? '🌙' : '☀️'; }
+})();
+function setTheme(mode){
+  document.documentElement.setAttribute('data-theme', mode);
+  localStorage.setItem('theme', mode);
+  const knob = document.getElementById('themeKnob');
+  if(knob){ knob.textContent = mode === 'dark' ? '🌙' : '☀️'; }
+}
+document.getElementById('themeToggle').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  setTheme(cur === 'light' ? 'dark' : 'light');
+};
+
+// ===== API AUTH (cheamă backend-ul) =====
+// dacă folosești același origin ca frontendul, setează API_BASE = "";
+const API_BASE = "";
+
+async function apiSignup(email, password){
+  const r = await fetch(`${API_BASE}/api/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    credentials: "include"
+  });
+  const data = await r.json().catch(()=> ({}));
+  if(!r.ok) throw new Error(data.error || "Eroare la înregistrare");
+  return data;
+}
+async function apiLogin(email, password){
+  const r = await fetch(`${API_BASE}/api/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    credentials: "include"
+  });
+  const data = await r.json().catch(()=> ({}));
+  if(!r.ok) throw new Error(data.error || "Eroare la autentificare");
+  return data;
+}
+async function apiLogout(){
+  await fetch(`${API_BASE}/api/logout`, { method: "POST", credentials: "include" });
+}
+async function apiMe(){
+  const r = await fetch(`${API_BASE}/api/me`, { credentials: "include" });
+  if(!r.ok) return null;
+  return r.json();
+}
+
+// ===== LOGIN / SIGNUP (fără localStorage pentru useri) =====
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const appEl = document.getElementById('app');
+const showSignup = document.getElementById('showSignup');
+const showLogin = document.getElementById('showLogin');
+const loginBtn = document.getElementById('loginBtn');
+const signupBtn = document.getElementById('signupBtn');
+const loginError = document.getElementById('loginError');
+const signupError = document.getElementById('signupError');
+
+showSignup.onclick = () => { loginForm.classList.add('hidden'); signupForm.classList.remove('hidden'); loginError.textContent=''; signupError.textContent=''; };
+showLogin.onclick  = () => { signupForm.classList.add('hidden'); loginForm.classList.remove('hidden'); loginError.textContent=''; signupError.textContent=''; };
+
+loginBtn.onclick = async () => {
+  loginError.textContent = '';
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  if(!email || !pass){ loginError.textContent = 'Completează email și parola.'; return; }
+
+  try{
+    await apiLogin(email, pass);
+    // autentificat cu cookie HttpOnly -> afișăm aplicația
+    loginForm.classList.add('hidden');
+    signupForm.classList.add('hidden');
+    appEl.style.display = 'grid';
+    initCanvas();
+    initPaletteUI();
+  }catch(err){
+    loginError.textContent = err.message || 'Email sau parola incorectă.';
+  }
+};
+
+signupBtn.onclick = async () => {
+  signupError.textContent = '';
+  const email   = document.getElementById('signupEmail').value.trim();
+  const pass    = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('signupConfirm').value;
+  const over18  = document.getElementById('over18').checked;
+
+  if(!email || !pass || !confirm){ signupError.textContent = 'Completează toate câmpurile.'; return; }
+  if(pass !== confirm){ signupError.textContent = 'Parolele nu coincid.'; return; }
+  if(!over18){ signupError.textContent = 'Trebuie să ai peste 18 ani.'; return; }
+  if(pass.length < 12){ signupError.textContent = 'Parola trebuie să aibă minim 12 caractere.'; return; }
+
+  try{
+    await apiSignup(email, pass); // serverul creează contul + setează cookie
+    // fie îl lași logat, fie îl trimiți la login; aici îl trimit la login:
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+    alert('Cont creat cu succes! Te poți autentifica.');
+  }catch(err){
+    signupError.textContent = err.message || 'Eroare la înregistrare.';
+  }
+};
+
+// ===== CANVAS =====
+function initCanvas(){
+  const GRID_COLS = 50, GRID_ROWS = 50, BLOCK_PX = 10;
+  const WORLD_W = GRID_COLS * BLOCK_PX, WORLD_H = GRID_ROWS * BLOCK_PX;
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  const colorI = document.getElementById('color');
+  const finalizeBtn = document.getElementById('finalize');
+  const statusEl = document.getElementById('status');
+  const clearSelBtn = document.getElementById('clearSel');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  let scale = 1, origin = {x:0,y:0}, isPanning=false, last={x:0,y:0};
+  const cells = new Map();
+  let tempSelected = new Set();
+
+  function resizeCanvas(){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = stage.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width*dpr);
+    canvas.height = Math.floor(rect.height*dpr);
+    canvas.style.width = rect.width+'px';
+    canvas.style.height = rect.height+'px';
+    ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr); draw();
+  }
+  function posToCell(wx,wy){
+    if(wx<0||wy<0||wx>=WORLD_W||wy>=WORLD_H) return null;
+    return {c:Math.floor(wx/BLOCK_PX),r:Math.floor(wy/BLOCK_PX)};
+  }
+  const key=(c,r)=>`${c},${r}`;
+
+  function draw(){
+    const rect = stage.getBoundingClientRect();
+    ctx.clearRect(0,0,rect.width,rect.height);
+    ctx.save(); ctx.translate(-origin.x*scale,-origin.y*scale); ctx.scale(scale,scale);
+
+    // canvas rămâne alb în orice temă
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,WORLD_W,WORLD_H);
+
+    for(const [k,color] of cells.entries()){
+      const [c,r]=k.split(',').map(Number);
+      ctx.fillStyle = color;
+      ctx.fillRect(c*BLOCK_PX,r*BLOCK_PX,BLOCK_PX,BLOCK_PX);
+    }
+    ctx.strokeStyle = colorI.value; ctx.lineWidth = 2/scale;
+    for(const k of tempSelected){
+      const [c,r]=k.split(',').map(Number);
+      ctx.strokeRect(c*BLOCK_PX+1,r*BLOCK_PX+1,BLOCK_PX-2,BLOCK_PX-2);
+    }
+    ctx.restore();
+  }
+
+  stage.addEventListener('mousedown',(e)=>{
+    const rect=stage.getBoundingClientRect();
+    const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+    const wx=sx/scale+origin.x, wy=sy/scale+origin.y;
+    const cell=posToCell(wx,wy);
+    if(cell){
+      const k=key(cell.c,cell.r);
+      tempSelected.has(k)?tempSelected.delete(k):tempSelected.add(k);
+      statusEl.textContent=`${tempSelected.size} căsuțe selectate`;
+      draw();
+    } else {isPanning=true; last={x:sx,y:sy};}
+  });
+  window.addEventListener('mousemove',(e)=>{if(isPanning){
+    const rect=stage.getBoundingClientRect();
+    const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+    origin.x-=(sx-last.x)/scale; origin.y-=(sy-last.y)/scale; last={x:sx,y:sy}; draw();
+  }});
+  window.addEventListener('mouseup',()=>{isPanning=false;});
+  stage.addEventListener('wheel',(e)=>{
+    e.preventDefault();
+    const rect=stage.getBoundingClientRect();
+    const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+    const before={x:sx/scale+origin.x,y:sy/scale+origin.y};
+    const factor=Math.exp(-e.deltaY*0.0015);
+    scale=Math.max(0.2,Math.min(6,scale*factor));
+    const after={x:sx/scale+origin.x,y:sy/scale+origin.y};
+    origin.x+=before.x-after.x; origin.y+=before.y-after.y; draw();
+  },{passive:false});
+
+  finalizeBtn.onclick=()=>{
+    if(tempSelected.size===0){alert('Nu ai selectat nicio căsuță.'); return;}
+    for(const k of tempSelected){cells.set(k,colorI.value);}
+    alert(`Ai colorat ${tempSelected.size} căsuțe cu ${colorI.value}`);
+    tempSelected.clear(); statusEl.textContent='Nicio selecție'; draw();
+  };
+  clearSelBtn.onclick=()=>{ tempSelected.clear(); statusEl.textContent='Nicio selecție'; draw(); };
+  logoutBtn.onclick=async ()=>{ await apiLogout(); location.reload(); };
+
+  window.addEventListener('resize',resizeCanvas);
+  resizeCanvas();
+
+  // pentru paletă
+  window.__getCurrentColor = ()=>colorI.value;
+  window.__setCurrentColor = (hex)=>{ colorI.value = hex; draw(); };
+}
+
+// ===== Paletă UI (swatch-uri + favorite controlate) =====
+function initPaletteUI(){
+  const paletteEl = document.getElementById('palette');
+  const addFavBtn = document.getElementById('addFav');
+
+  // PRESETS: a 4-a și a 5-a culoare din vechea listă au fost eliminate
+  const PRESETS = [
+    '#000000','#4b5563','#9ca3af',
+    '#ef4444','#f59e0b','#fbbf24','#84cc16',
+    '#22c55e','#10b981','#06b6d4','#3b82f6',
+    '#6366f1','#8b5cf6','#ec4899','#f43f5e'
+  ];
+
+  const favKey='pixel_favs_v2'; // cheie nouă pentru limita de 5
+  let favs = [];
+  try{ favs = JSON.parse(localStorage.getItem(favKey)||'[]'); }catch{}
+
+  const uniqUpper = (arr)=>[...new Set(arr.map(x=>x.toUpperCase()))];
+
+  function render(){
+    paletteEl.innerHTML='';
+    const all = [...uniqUpper(PRESETS), ...uniqUpper(favs)].slice(0, 32);
+    all.forEach(hex=>{
+      const d=document.createElement('button');
+      d.className='swatch';
+      d.style.background=hex;
+      d.title=hex;
+      if(hex.toUpperCase() === (window.__getCurrentColor?.()||'').toUpperCase()){
+        d.classList.add('selected');
+      }
+      d.onclick=()=>{
+        window.__setCurrentColor?.(hex);
+        [...paletteEl.children].forEach(x=>x.classList.remove('selected'));
+        d.classList.add('selected');
+      };
+      paletteEl.appendChild(d);
+    });
+  }
+  render();
+
+  addFavBtn.onclick=()=>{
+    const cur = (window.__getCurrentColor?.()||'').toUpperCase();
+    if(!cur) return;
+
+    const existsInPresets = uniqUpper(PRESETS).includes(cur);
+    const existsInFavs = uniqUpper(favs).includes(cur);
+    if(existsInPresets || existsInFavs){
+      alert('Culoare deja disponibila in paleta rapida');
+      return;
+    }
+    if(favs.length >= 5){
+      alert('Poți adăuga maxim 5 culori noi la paleta rapidă.');
+      return;
+    }
+    favs.unshift(cur);
+    localStorage.setItem(favKey, JSON.stringify(favs));
+    render();
+  };
+}
+
+// ===== Auto-login dacă există deja sesiune validă =====
+(async () => {
+  try {
+    const me = await apiMe();
+    if (me) {
+      // utilizatorul are deja cookie valid -> sarim direct în aplicație
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('signupForm').classList.add('hidden');
+      document.getElementById('app').style.display = 'grid';
+      initCanvas();
+      initPaletteUI();
+    }
+  } catch (e) {
+    console.warn("Nu există sesiune activă:", e);
+  }
+})();
+</script>
+</body>
+</html>
